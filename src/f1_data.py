@@ -62,7 +62,17 @@ def _process_single_driver(args):
     # iterate laps in order
     for _, lap in laps_driver.iterlaps():
         # get telemetry for THIS lap only
-        lap_tel = lap.get_telemetry()
+        try:
+            lap_tel = lap.get_telemetry()
+        except KeyError as e:
+            # Handle case where FastF1 fails to merge car and position data
+            # due to empty position telemetry (missing 'Date' column)
+            if "'Date'" in str(e):
+                print(f"Warning: Skipping lap {lap.LapNumber} for driver {driver_code} due to missing position telemetry")
+                continue
+            else:
+                # Re-raise if it's a different KeyError
+                raise
         lap_number = lap.LapNumber
         tyre_compund_as_int = get_tyre_compound_int(lap.Compound)
         tyre_life = lap.TyreLife if pd.notna(lap.TyreLife) else 0
